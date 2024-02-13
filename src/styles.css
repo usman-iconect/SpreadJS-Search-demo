@@ -1,0 +1,125 @@
+body {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+#app {
+   height: 100%;
+}
+
+.sample-tutorial {
+   position: relative;
+   height: 100%;
+   overflow: hidden;
+}
+
+.sample-container {
+  width: calc(100% - 280px);
+  height: 100%;
+  float: left;
+}
+
+.sample-spreadsheets {
+  width: 100%;
+  height: calc(100% - 25px);
+  overflow: hidden;
+}
+
+#statusBar {
+  bottom: 0;
+  height: 25px;
+  width: 100%;
+  position: relative;
+}
+
+.options-container {
+  float: right;
+  width: 280px;
+  height: 100%;
+  box-sizing: border-box;
+  background: #fbfbfb;
+  overflow: auto;
+}
+
+.sample-options {
+  z-index: 1000;
+}
+
+.inputContainer {
+  width: 100%;
+  height: auto;
+  border: 1px solid #eee;
+  padding: 6px 12px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.settingButton {
+  color: #fff;
+  background: #82bc00;
+  outline: 0;
+  line-height: 1.5715;
+  position: relative;
+  display: inline-block;
+  font-weight: 400;
+  white-space: nowrap;
+  text-align: center;
+  height: 32px;
+  padding: 4px 15px;
+  font-size: 14px;
+  border-radius: 2px;
+  user-select: none;
+  cursor: pointer;
+  border: 1px solid #82bc00;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  margin-top: 10px;
+}
+
+.settingButton:hover {
+  color: #fff;
+  border-color: #88b031;
+  background: #88b031;
+}
+
+.options-title {
+  font-weight: bold;
+  margin: 4px 2px;
+}
+
+#selectedFile {
+  width: 180px;
+}
+
+#saveFileType {
+  width: 120px;
+  height: 31px;
+}
+
+.open-options .item {
+  margin: 5px 0px;
+  display: flex;
+}
+.save-options .item {
+  margin: 5px 0px;
+  display: flex;
+}
+
+label {
+  margin-left: 3px;
+}
+
+select, input[type="text"], input[type="number"] {
+  display: inline-block;
+  margin-left: auto;
+  width: 120px;
+  font-weight: 400;
+  outline: 0;
+  line-height: 1.5715;
+  border-radius: 2px;
+  border: 1px solid #F4F8EB;
+  box-sizing: border-box;
+}

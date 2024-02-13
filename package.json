@@ -1,0 +1,51 @@
+{
+    "name": "react-sample",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "start": "lite-server"
+    },
+    "devDependencies": {
+        "lite-server": "2.4.0"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "@types/react": "16.8.7",
+        "@types/react-dom": "16.8.2",
+        "jszip": "3.1.3",
+        "plugin-typescript": "8.0.0",
+        "react": "16.8.4",
+        "react-dom": "16.8.4",
+        "systemjs": "0.19.40",
+        "systemjs-plugin-babel": "0.0.25",
+        "systemjs-plugin-css": "0.1.37",
+        "typescript": "^2.4.0",
+        "@mescius/spread-sheets": "latest",
+        "@mescius/spread-sheets-react": "latest",
+        "@mescius/spread-excelio": "latest",
+        "@mescius/spread-sheets-io": "latest",
+        "@mescius/spread-sheets-charts": "latest",
+        "@mescius/spread-sheets-print": "latest",
+        "@mescius/spread-sheets-pdf": "latest",
+        "@mescius/spread-sheets-barcode": "latest",
+        "@mescius/spread-sheets-shapes": "latest",
+        "@mescius/spread-sheets-slicers": "latest",
+        "@mescius/spread-sheets-resources-ko": "latest",
+        "@mescius/spread-sheets-resources-ja": "latest",
+        "@mescius/spread-sheets-resources-zh": "latest",
+        "@mescius/spread-sheets-languagepackages": "latest",
+        "@mescius/spread-sheets-pivot-addon": "latest",
+        "@mescius/spread-sheets-reportsheet-addon": "latest",
+        "@mescius/spread-sheets-tablesheet": "latest",
+        "@mescius/spread-sheets-ganttsheet": "latest",
+        "@mescius/spread-sheets-formula-panel": "latest",
+        "@mescius/spread-sheets-designer": "latest",
+        "@mescius/spread-sheets-designer-react": "latest",
+        "@mescius/spread-sheets-designer-resources-en": "latest",
+        "@mescius/spread-sheets-designer-resources-cn": "latest",
+        "@mescius/spread-sheets-designer-resources-ko": "latest",
+        "@mescius/spread-sheets-designer-resources-ja": "latest"
+    }
+}

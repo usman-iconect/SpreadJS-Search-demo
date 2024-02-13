@@ -1,0 +1,22 @@
+<!doctype html>
+<html style="height:100%;font-size:14px;">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" type="text/css" href="node_modules/@mescius/spread-sheets/styles/gc.spread.sheets.excel2013white.css">
+    <script src="https://developer.mescius.com/spreadjs/demos/spread/source/js/FileSaver.js" type="text/javascript"></script>
+    <!-- SystemJS -->
+    <script src="node_modules/systemjs/dist/system.src.js"></script>
+    <script src="systemjs.config.js"></script>
+    <script>
+        System.import('https://developer.mescius.com/spreadjs/demos/en/lib/react/license.js').then(function () {
+            System.import('./src/app');
+        }); 
+    </script>
+    <title>SpreadJS Search</title>
+</head>
+<body>
+    <div id="app"></div>
+</body>
+</html>
