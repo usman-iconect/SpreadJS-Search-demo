@@ -111,9 +111,49 @@ export function AppFunc() {
         xlsx: {},
         csv: {},
     });
+
+    function newPerson() {
+        console.log("new person clicked")
+    }
+
     function initSpread(spread) {
 
         setSpread(spread);
+        spread.contextMenu.menuData = [
+            {
+                text: "New Person",
+                name: "newPerson",
+                command: () => {
+                    console.log("new person clicked")
+                },
+                workArea: "viewport"
+            },
+            {
+                text: "Current",
+                name: "Current",
+                command: () => {
+                    console.log("Current clicked")
+                },
+                workArea: "viewport"
+            },
+            {
+                text: "Copy",
+                name: "Copy",
+                command: () => {
+                    console.log("Copy clicked")
+                },
+                workArea: "viewport"
+            },
+            {
+                text: "Close",
+                name: "Close",
+                command: () => {
+                    console.log("close clicked")
+                },
+                workArea: "viewport"
+            },
+        ]
+
         //init Status Bar
         var statusBar = new GC.Spread.Sheets.StatusBar.StatusBar(document.getElementById('statusBar'));
         statusBar.bind(spread);
@@ -134,18 +174,7 @@ export function AppFunc() {
             spread.import(file, function () { }, function () { }, options);
         }
     }
-    function save() {
-        var fileType = saveFileType;
-        var fileName = 'export.' + fileType;
-        var options = deepClone(saveOptions[fileType]);
 
-        if (fileType === FileType.SJS) {
-            spread.save(function (blob) { saveAs(blob, fileName); }, function () { }, options);
-        } else {
-            options.fileType = mapExportFileType(fileType);
-            spread.export(function (blob) { saveAs(blob, fileName); }, function () { }, options);
-        }
-    }
     function onSelectedFileChange(e) {
         let selectedFile = e.target.files[0];
         let openFileType = getFileType(selectedFile);
@@ -247,6 +276,7 @@ export function AppFunc() {
                     //set callback to h2
                     const hyperLinkCell = setCellTypeCallback(HyperLink, { id: i + j, text: text });
                     activeSheet.setCellType(i, j, hyperLinkCell);
+                    activeSheet.setTag(i, j, JSON.stringify({ id: i + j, text: text }))
                 }
                 else {
                     activeSheet.getCell(i, j).backColor(undefined);
