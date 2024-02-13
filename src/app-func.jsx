@@ -214,18 +214,27 @@ export function AppFunc() {
         }
     }
 
+    function setCellTypeCallback(hyperLink, data) {
+        // h.text("set sheet tab style");
+        hyperLink.linkToolTip(data.text.includes("@") ? "email" : "Person");
+        hyperLink.activeOnClick(true);
+        hyperLink.linkColor("black");
+        hyperLink.onClickAction(() => {
+            console.log("cell clicked", data);
+        });
+        return hyperLink;
+    }
 
-    function search(){
+    function search() {
         console.log("searching", new Date().toLocaleTimeString())
         // let searchString = ["373087151310005", "778122350629261", "539604577512086", "570410512495429", "880898401883481", "855558342263732", "853530326251646", "823350331938527", "508858507779861", "1936650886647"];
         // let searchString = ['misfire', 'legal', 'claim', 'alleged', 'infection', 'design', 'bowel', 'device', 'records', 'erosion', 'patient', 'mesh', 'bard']
         let searchString = document.getElementById('search-text').value.split(" ")
         spread.suspendPaint();
         const activeSheet = spread.sheets[1]
-        for (var i = 0; i < activeSheet.getRowCount() ; i++) {
-            for (var j = 0; j < activeSheet.getColumnCount() ; j++)
-            {
-                var text = activeSheet.getText(i,j).toLowerCase();
+        for (var i = 0; i < activeSheet.getRowCount(); i++) {
+            for (var j = 0; j < activeSheet.getColumnCount(); j++) {
+                var text = activeSheet.getText(i, j).toLowerCase();
                 let isAHit = false
                 for (const word of searchString) {
                     if (text.includes(word.toLowerCase().trim())) {
@@ -234,9 +243,12 @@ export function AppFunc() {
                 }
                 if (isAHit) {
                     activeSheet.getCell(i, j).backColor("lightgreen");
+                    const HyperLink = new GC.Spread.Sheets.CellTypes.HyperLink();
+                    //set callback to h2
+                    const hyperLinkCell = setCellTypeCallback(HyperLink, { id: i + j, text: text });
+                    activeSheet.setCellType(i, j, hyperLinkCell);
                 }
-                else
-                {
+                else {
                     activeSheet.getCell(i, j).backColor(undefined);
                 }
             }
@@ -270,11 +282,11 @@ export function AppFunc() {
                         ]}
                     </div>
                 </div>
-                <div class="inputContainer"> 
+                <div class="inputContainer">
                     <input type='text' id='search-text' style={{
                         border: '1px solid black',
                         marginRight: '10px'
-                    }}/>                  
+                    }} />
                     <button class="settingButton" id="serach" onClick={search}>Search</button>
 
                 </div>
