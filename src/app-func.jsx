@@ -9,6 +9,8 @@ import '@mescius/spread-sheets-pivot-addon';
 import '@mescius/spread-sheets-reportsheet-addon';
 import "@mescius/spread-sheets-tablesheet";
 import "@mescius/spread-sheets-ganttsheet";
+import '@mescius/spread-sheets-print';
+import '@mescius/spread-sheets-pdf';
 import { SpreadSheets, Worksheet } from '@mescius/spread-sheets-react';
 import './styles.css';
 
@@ -40,14 +42,6 @@ function getFileType(file) {
     }
 }
 
-function mapExportFileType(fileType) {
-    if (fileType === FileType.SSJson) {
-        return GC.Spread.Sheets.FileType.ssjson;
-    } else if (fileType === FileType.Csv) {
-        return GC.Spread.Sheets.FileType.csv;
-    }
-    return GC.Spread.Sheets.FileType.excel;
-}
 
 var defaultOpenOptions = [
     { propName: "openMode", type: "select", displayText: "OpenMode", options: [{ name: 'normal', value: 0 }, { name: 'lazy', value: 1 }, { name: 'incremental', value: 2 }], default: 0 },
@@ -258,30 +252,27 @@ export function AppFunc() {
         console.log("searching", new Date().toLocaleTimeString())
         // let searchString = ["373087151310005", "778122350629261", "539604577512086", "570410512495429", "880898401883481", "855558342263732", "853530326251646", "823350331938527", "508858507779861", "1936650886647"];
         // let searchString = ['misfire', 'legal', 'claim', 'alleged', 'infection', 'design', 'bowel', 'device', 'records', 'erosion', 'patient', 'mesh', 'bard']
-        let searchString = document.getElementById('search-text').value.split(" ")
+        let searchString = document.getElementById('search-text').value
+        const activeSheet = spread.getActiveSheet()
+        const range = activeSheet.getUsedRange(GC.Spread.Sheets.UsedRangeType.data);
+        if (!range) {
+            return;
+        }
+
         spread.suspendPaint();
-        const activeSheet = spread.sheets[1]
-        for (var i = 0; i < activeSheet.getRowCount(); i++) {
-            for (var j = 0; j < activeSheet.getColumnCount(); j++) {
-                var text = activeSheet.getText(i, j).toLowerCase();
-                let isAHit = false
-                for (const word of searchString) {
-                    if (text.includes(word.toLowerCase().trim())) {
-                        isAHit = true
-                    }
+
+        for (var i = range.row; i < range.row + range.rowCount; i++) {
+            for (var j = range.col; j < range.col + range.colCount; j++) {
+                const text = activeSheet.getText(i, j);
+                if (text == searchString || text.includes(searchString)) {
+                    highlightText(searchString, text, i, j, activeSheet);
                 }
-                if (isAHit) {
-                    activeSheet.getCell(i, j).backColor("lightgreen");
-                    const HyperLink = new GC.Spread.Sheets.CellTypes.HyperLink();
-                    //set callback to h2
-                    const hyperLinkCell = setCellTypeCallback(HyperLink, { id: i + j, text: text });
-                    activeSheet.setCellType(i, j, hyperLinkCell);
-                    activeSheet.setTag(i, j, JSON.stringify({ id: i + j, text: text }))
-                }
-                else {
+                else if (text != searchString) {
                     activeSheet.getCell(i, j).backColor(undefined);
                 }
+
             }
+
         }
         spread.resumePaint();
         console.log("done", new Date().toLocaleTimeString())
@@ -320,7 +311,57 @@ export function AppFunc() {
                     <button class="settingButton" id="serach" onClick={search}>Search</button>
 
                 </div>
+                <button class="settingButton" id="serach" onClick={() => {
+                    spread.savePDF(function (blob) {
+
+                        console.log(blob)
+
+                    }, function ({ errorMessage }) {
+                        console.log(errorMessage);
+                    }, {
+                        title: 'Test Title',
+                        author: 'Test Author',
+                        subject: 'Test Subject',
+                        keywords: 'Test Keywords',
+                        creator: 'test Creator'
+                    });
+                }}>Export PDF</button>
+                <button style={{marginLeft: 10}} class="settingButton" id="serach" onClick={() => {
+                    setTimeout(() => {
+                        spread.print()
+                    }, 0)
+                }}>Print</button>
+
             </div>
         </div>
     </div>;
+}
+
+function highlightText(searchString, text, row, col, activeSheet) {
+
+    if (text.length == searchString.length) {
+        activeSheet.getCell(row, col).foreColor("rgb(252, 28, 3)");
+    } else {
+        const normalText = text.split(searchString);
+        const cellContent = { richText: [] };
+
+        for (let i = 0; i < normalText.length; i++) {
+            if (i == 0 && normalText[i] == "") {
+                cellContent.richText.push({ style: { foreColor: "rgb(252, 28, 3)" }, text: searchString });
+                continue;
+            } else if (i == (normalText.length - 1)) {
+                if (normalText[i] == "") {
+                    break;
+                } else {
+                    cellContent.richText.push({ text: normalText[i] });
+                }
+            } else {
+                cellContent.richText.push({ text: normalText[i] });
+                cellContent.richText.push({ style: { foreColor: "rgb(252, 28, 3)" }, text: searchString });
+            }
+
+        }
+        activeSheet.setValue(row, col, cellContent);
+    }
+
 }

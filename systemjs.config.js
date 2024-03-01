@@ -25,6 +25,8 @@
             '@mescius/spread-sheets-reportsheet-addon': 'npm:@mescius/spread-sheets-reportsheet-addon/index.js',
             '@mescius/spread-sheets-tablesheet': 'npm:@mescius/spread-sheets-tablesheet/index.js',
             '@mescius/spread-sheets-ganttsheet': 'npm:@mescius/spread-sheets-ganttsheet/index.js',
+            '@mescius/spread-sheets-print': 'npm:@mescius/spread-sheets-print/index.js',
+            '@mescius/spread-sheets-pdf': 'npm:@mescius/spread-sheets-pdf/index.js',
             '@grapecity/jsob-test-dependency-package/react-components': 'npm:@grapecity/jsob-test-dependency-package/react-components/index.js',
             'react': 'npm:react/umd/react.production.min.js',
             'react-dom': 'npm:react-dom/umd/react-dom.production.min.js',
