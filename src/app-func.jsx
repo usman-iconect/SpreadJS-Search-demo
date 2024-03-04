@@ -252,7 +252,7 @@ export function AppFunc() {
         console.log("searching", new Date().toLocaleTimeString())
         // let searchString = ["373087151310005", "778122350629261", "539604577512086", "570410512495429", "880898401883481", "855558342263732", "853530326251646", "823350331938527", "508858507779861", "1936650886647"];
         // let searchString = ['misfire', 'legal', 'claim', 'alleged', 'infection', 'design', 'bowel', 'device', 'records', 'erosion', 'patient', 'mesh', 'bard']
-        let searchString = document.getElementById('search-text').value
+        let searchStrings = document.getElementById('search-text').value.split(" ");
         const activeSheet = spread.getActiveSheet()
         const range = activeSheet.getUsedRange(GC.Spread.Sheets.UsedRangeType.data);
         if (!range) {
@@ -264,13 +264,15 @@ export function AppFunc() {
         for (var i = range.row; i < range.row + range.rowCount; i++) {
             for (var j = range.col; j < range.col + range.colCount; j++) {
                 const text = activeSheet.getText(i, j);
-                if (text == searchString || text.includes(searchString)) {
-                    highlightText(searchString, text, i, j, activeSheet);
+                const searchResults = findMatches(text, searchStrings, false);
+                if (searchResults.length > 0) {
+                    HighlightText(searchResults, text, i, j, activeSheet);
                 }
-                else if (text != searchString) {
+                else {
                     activeSheet.getCell(i, j).backColor(undefined);
+                    activeSheet.getCell(i, j).foreColor(undefined);
+                    activeSheet.setValue(i, j, { richText: [{ text: text }] });
                 }
-
             }
 
         }
@@ -326,7 +328,7 @@ export function AppFunc() {
                         creator: 'test Creator'
                     });
                 }}>Export PDF</button>
-                <button style={{marginLeft: 10}} class="settingButton" id="serach" onClick={() => {
+                <button style={{ marginLeft: 10 }} class="settingButton" id="serach" onClick={() => {
                     setTimeout(() => {
                         spread.print()
                     }, 0)
@@ -337,31 +339,47 @@ export function AppFunc() {
     </div>;
 }
 
-function highlightText(searchString, text, row, col, activeSheet) {
+function findMatches(str, words, matchWholeWord) {
+    const flags = 'gi';
+    const matches = [];
 
-    if (text.length == searchString.length) {
-        activeSheet.getCell(row, col).foreColor("rgb(252, 28, 3)");
-    } else {
-        const normalText = text.split(searchString);
-        const cellContent = { richText: [] };
+    for (const word of words) {
+        const pattern = matchWholeWord ? `\\b${word}\\b` : word;
+        const regex = new RegExp(pattern, flags);
+        let match;
 
-        for (let i = 0; i < normalText.length; i++) {
-            if (i == 0 && normalText[i] == "") {
-                cellContent.richText.push({ style: { foreColor: "rgb(252, 28, 3)" }, text: searchString });
-                continue;
-            } else if (i == (normalText.length - 1)) {
-                if (normalText[i] == "") {
-                    break;
-                } else {
-                    cellContent.richText.push({ text: normalText[i] });
-                }
-            } else {
-                cellContent.richText.push({ text: normalText[i] });
-                cellContent.richText.push({ style: { foreColor: "rgb(252, 28, 3)" }, text: searchString });
-            }
-
+        while ((match = regex.exec(str)) !== null) {
+            matches.push({ text: match[0], index: match.index });
         }
-        activeSheet.setValue(row, col, cellContent);
     }
 
+    return matches.length > 0 ? matches.sort((a, b) => a.index - b.index) : matches;
+}
+
+function HighlightText(searchResults, cellText, row, col, activeSheet) {
+
+    activeSheet.getCell(row, col).backColor("green");
+
+    //the whole text cell is matched so just highlight that simply
+    if (searchResults.length === 1 && searchResults[0].text === cellText) {
+        activeSheet.getCell(row, col).foreColor("yellow")
+        return
+    }
+
+    const cellContent = { richText: [] };
+    let lastIndex = 0;
+    console.log(searchResults, cellText)
+    searchResults.forEach(result => {
+        //push not highlighted text
+        cellContent.richText.push({ text: cellText.substring(lastIndex, result.index) });
+        //push highlighted text
+        lastIndex = result.index + result.text.length;
+        cellContent.richText.push({ style: { foreColor: "yellow" }, text: cellText.substring(result.index, lastIndex) });
+    });
+    if (lastIndex < cellText.length) {
+        const remainingText = cellText.substring(lastIndex);
+        cellContent.richText.push({ text: remainingText });
+    }
+
+    activeSheet.setValue(row, col, cellContent);
 }
