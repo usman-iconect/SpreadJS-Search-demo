@@ -252,7 +252,7 @@ export function AppFunc() {
         console.log("searching", new Date().toLocaleTimeString())
         // let searchString = ["373087151310005", "778122350629261", "539604577512086", "570410512495429", "880898401883481", "855558342263732", "853530326251646", "823350331938527", "508858507779861", "1936650886647"];
         // let searchString = ['misfire', 'legal', 'claim', 'alleged', 'infection', 'design', 'bowel', 'device', 'records', 'erosion', 'patient', 'mesh', 'bard']
-        let searchStrings = document.getElementById('search-text').value.split(" ");
+        let searchStrings = document.getElementById('search-text').value.split(",");
         const activeSheet = spread.getActiveSheet()
         const range = activeSheet.getUsedRange(GC.Spread.Sheets.UsedRangeType.data);
         if (!range) {
@@ -370,8 +370,14 @@ function HighlightText(searchResults, cellText, row, col, activeSheet) {
     let lastIndex = 0;
     console.log(searchResults, cellText)
     searchResults.forEach(result => {
-        //push not highlighted text
-        cellContent.richText.push({ text: cellText.substring(lastIndex, result.index) });
+
+        if (result.index < lastIndex) {
+            result.index = lastIndex
+        } else {
+            //push not highlighted text
+            cellContent.richText.push({ text: cellText.substring(lastIndex, result.index) });
+        }
+
         //push highlighted text
         lastIndex = result.index + result.text.length;
         cellContent.richText.push({ style: { foreColor: "yellow" }, text: cellText.substring(result.index, lastIndex) });
