@@ -156,7 +156,7 @@ export function AppFunc() {
         if (!spread) {
             return;
         }
-       
+
     }
     function open() {
         var file = selectedFile;
@@ -259,32 +259,36 @@ export function AppFunc() {
         console.log("searching", new Date().toLocaleTimeString())
         // let searchString = ["373087151310005", "778122350629261", "539604577512086", "570410512495429", "880898401883481", "855558342263732", "853530326251646", "823350331938527", "508858507779861", "1936650886647"];
         // let searchString = ['misfire', 'legal', 'claim', 'alleged', 'infection', 'design', 'bowel', 'device', 'records', 'erosion', 'patient', 'mesh', 'bard']
-        let searchStrings = document.getElementById('search-text').value.split(",");
+        let searchStrings = document.getElementById('search-text').value;
+        if (!searchStrings || searchStrings.length === 0) {
+            searchStrings = '31';
+        }
+        searchStrings = searchStrings.split(",")
+
         const activeSheet = spread.getActiveSheet()
         const range = activeSheet.getUsedRange(GC.Spread.Sheets.UsedRangeType.data);
         if (!range) {
             return;
         }
+        while (spread.undoManager().getUndoStack().length > 0) {
+            spread.undoManager().undo();
+        }
 
         spread.suspendPaint();
-        let navIndexDic = {}
         for (var i = range.row; i < range.row + range.rowCount; i++) {
             for (var j = range.col; j < range.col + range.colCount; j++) {
-                const text = activeSheet.getText(i, j);
+                let text = activeSheet.getValue(i, j);
+                if (typeof text !== 'string')
+                    text = activeSheet.getText(i, j);
                 const searchResults = findMatches(text, searchStrings, false);
                 if (searchResults.length > 0) {
-                    HighlightText(searchResults, text, i, j, activeSheet, navIndexDic);
-                }
-                else {
-                    activeSheet.getCell(i, j).backColor(undefined);
-                    activeSheet.getCell(i, j).foreColor(undefined);
-                    activeSheet.setValue(i, j, { richText: [{ text: text }] });
+                    HighlightText(searchResults, text, i, j, activeSheet, spread);
                 }
             }
-
         }
         spread.resumePaint();
         console.log("done", new Date().toLocaleTimeString())
+
     }
 
     function openExportTab() {
@@ -306,7 +310,7 @@ export function AppFunc() {
 
     React.useEffect(() => {
         if (spread)
-            fetch('00000029.xlsx')
+            fetch('issue-highlight.xlsx')
                 .then(res => res.blob())
                 .then((blob) => {
                     const file = new File([blob], 'excel.xlsx', { type: blob.type });
@@ -366,12 +370,12 @@ export function AppFunc() {
                     });
                 }}>Export PDF</button>
                 <button style={{ marginLeft: 10 }} class="settingButton" id="serach" onClick={() => {
-                     spread.suspendPaint();
-                     const sheet = spread.sheets[1];
-                     const printInfo = sheet.printInfo();
-                     printInfo.showBorder(false);
-                     printInfo.showGridLine(true);
-                     spread.resumePaint();
+                    spread.suspendPaint();
+                    const sheet = spread.sheets[1];
+                    const printInfo = sheet.printInfo();
+                    printInfo.showBorder(false);
+                    printInfo.showGridLine(true);
+                    spread.resumePaint();
                     setTimeout(() => {
                         spread.print()
                     }, 0)
@@ -399,35 +403,55 @@ function findMatches(str, words, matchWholeWord) {
     return matches.length > 0 ? matches.sort((a, b) => a.index - b.index) : matches;
 }
 
-function HighlightText(searchResults, cellText, row, col, activeSheet, navIndexDic) {
+function HighlightText(searchResults, cellText, row, col, activeSheet, spread) {
+    const highlightCommand = {
+        canUndo: true,
+        execute: function (spread, options, isUndo) {
+            const Commands = GC.Spread.Sheets.Commands;
+            if (isUndo) {
+                Commands.undoTransaction(spread, options);
+                return true;
+            } else {
+                Commands.startTransaction(spread, options);
+                //the whole text cell is matched so just highlight that simply
+                if (searchResults.length === 1 && searchResults[0].text === cellText) {
+                    activeSheet.getCell(row, col).foreColor("red")
+                } else {
+                    const cellContent = { richText: [] };
+                    let lastIndex = 0;
+                    searchResults.forEach((result, index) => {
 
-    //the whole text cell is matched so just highlight that simply
-    if (searchResults.length === 1 && searchResults[0].text === cellText) {
-        activeSheet.getCell(row, col).foreColor("yellow")
-        return
-    }
+                        if (result.index < lastIndex) {
+                            result.index = lastIndex
+                        } else {
+                            //push not highlighted text
+                            cellContent.richText.push({ text: cellText.substring(lastIndex, result.index) });
+                        }
 
-    const cellContent = { richText: [] };
-    let lastIndex = 0;
-    searchResults.forEach((result, index) => {
+                        //push highlighted text
+                        lastIndex = result.index + result.text.length;
+                        cellContent.richText.push({ style: { foreColor: "red" }, text: cellText.substring(result.index, lastIndex) });
+                    });
+                    if (lastIndex < cellText.length) {
+                        const remainingText = cellText.substring(lastIndex);
+                        cellContent.richText.push({ text: remainingText });
+                    }
+                    activeSheet.setValue(row, col, cellContent);
+                }
 
-        if (result.index < lastIndex) {
-            result.index = lastIndex
-        } else {
-            //push not highlighted text
-            cellContent.richText.push({ text: cellText.substring(lastIndex, result.index) });
+                Commands.endTransaction(spread, options);
+                return true;
+            }
         }
+    };
 
-        //push highlighted text
-        lastIndex = result.index + result.text.length;
-        cellContent.richText.push({ style: { foreColor: '#FFDF00', borderRight: "dashed" }, text: cellText.substring(result.index, lastIndex) });
+    const commandManager = spread.commandManager();
+    commandManager.register('highlightCommand-' + row + '-' + col, highlightCommand);
+    commandManager.execute({
+        cmd: 'highlightCommand-' + row + '-' + col,
+        sheetName: spread.getActiveSheet().name(),
+        customID: 'highlightCommand-' + row + '-' + col
     });
-    if (lastIndex < cellText.length) {
-        const remainingText = cellText.substring(lastIndex);
-        cellContent.richText.push({ text: remainingText });
-    }
-
-    activeSheet.setValue(row, col, cellContent);
 }
 // #808080
 export const WordMarkingTabArray = ['#000000', '#0000FF', '#FF00FF', '#808080', '#008000', '#00FFFF', '#00FF00', '#800000',
