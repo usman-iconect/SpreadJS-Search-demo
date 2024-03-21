@@ -152,6 +152,11 @@ export function AppFunc() {
         var statusBar = new GC.Spread.Sheets.StatusBar.StatusBar(document.getElementById('statusBar'));
         statusBar.bind(spread);
         document.getElementById('vp').style.height = '80vh'
+
+        if (!spread) {
+            return;
+        }
+       
     }
     function open() {
         var file = selectedFile;
@@ -163,7 +168,9 @@ export function AppFunc() {
         var options = deepClone(openOptions[fileType]);
 
         if (fileType === FileType.SJS) {
-            spread.open(file, function () { }, function () { }, options);
+            spread.open(file, function () { }, function (err) {
+                console.log(err);
+            }, options);
         } else {
             spread.import(file, function () { }, function () { }, options);
         }
@@ -260,13 +267,13 @@ export function AppFunc() {
         }
 
         spread.suspendPaint();
-
+        let navIndexDic = {}
         for (var i = range.row; i < range.row + range.rowCount; i++) {
             for (var j = range.col; j < range.col + range.colCount; j++) {
                 const text = activeSheet.getText(i, j);
                 const searchResults = findMatches(text, searchStrings, false);
                 if (searchResults.length > 0) {
-                    HighlightText(searchResults, text, i, j, activeSheet);
+                    HighlightText(searchResults, text, i, j, activeSheet, navIndexDic);
                 }
                 else {
                     activeSheet.getCell(i, j).backColor(undefined);
@@ -279,6 +286,36 @@ export function AppFunc() {
         spread.resumePaint();
         console.log("done", new Date().toLocaleTimeString())
     }
+
+    function openExportTab() {
+        // Open a new tab
+        const exportTab = window.open('/viewer.html', '_blank');
+
+        // Listen for messages from the export tab
+        window.addEventListener('message', (event) => {
+            console.log("ecent coming", event)
+            if (event.origin !== window.location.origin) return;
+
+            // Handle messages from the export tab
+            if (event.data === 'exportCompleted') {
+                // Do something when export is completed, e.g., close the export tab
+                exportTab.close();
+            }
+        });
+    }
+
+    React.useEffect(() => {
+        if (spread)
+            fetch('00000029.xlsx')
+                .then(res => res.blob())
+                .then((blob) => {
+                    const file = new File([blob], 'excel.xlsx', { type: blob.type });
+                    spread.import(file, () => {
+                    }, (error) => {
+                        console.log('error', error);
+                    });
+                });
+    }, [spread]);
 
     return <div class="sample-tutorial">
         <div class="sample-container">
@@ -329,11 +366,17 @@ export function AppFunc() {
                     });
                 }}>Export PDF</button>
                 <button style={{ marginLeft: 10 }} class="settingButton" id="serach" onClick={() => {
+                     spread.suspendPaint();
+                     const sheet = spread.sheets[1];
+                     const printInfo = sheet.printInfo();
+                     printInfo.showBorder(false);
+                     printInfo.showGridLine(true);
+                     spread.resumePaint();
                     setTimeout(() => {
                         spread.print()
                     }, 0)
                 }}>Print</button>
-
+                <button style={{ marginLeft: 10 }} class="settingButton" onClick={openExportTab}>New Tab Print</button>
             </div>
         </div>
     </div>;
@@ -356,9 +399,7 @@ function findMatches(str, words, matchWholeWord) {
     return matches.length > 0 ? matches.sort((a, b) => a.index - b.index) : matches;
 }
 
-function HighlightText(searchResults, cellText, row, col, activeSheet) {
-
-    activeSheet.getCell(row, col).backColor("green");
+function HighlightText(searchResults, cellText, row, col, activeSheet, navIndexDic) {
 
     //the whole text cell is matched so just highlight that simply
     if (searchResults.length === 1 && searchResults[0].text === cellText) {
@@ -368,8 +409,7 @@ function HighlightText(searchResults, cellText, row, col, activeSheet) {
 
     const cellContent = { richText: [] };
     let lastIndex = 0;
-    console.log(searchResults, cellText)
-    searchResults.forEach(result => {
+    searchResults.forEach((result, index) => {
 
         if (result.index < lastIndex) {
             result.index = lastIndex
@@ -380,7 +420,7 @@ function HighlightText(searchResults, cellText, row, col, activeSheet) {
 
         //push highlighted text
         lastIndex = result.index + result.text.length;
-        cellContent.richText.push({ style: { foreColor: "yellow" }, text: cellText.substring(result.index, lastIndex) });
+        cellContent.richText.push({ style: { foreColor: '#FFDF00', borderRight: "dashed" }, text: cellText.substring(result.index, lastIndex) });
     });
     if (lastIndex < cellText.length) {
         const remainingText = cellText.substring(lastIndex);
@@ -389,3 +429,6 @@ function HighlightText(searchResults, cellText, row, col, activeSheet) {
 
     activeSheet.setValue(row, col, cellContent);
 }
+// #808080
+export const WordMarkingTabArray = ['#000000', '#0000FF', '#FF00FF', '#808080', '#008000', '#00FFFF', '#00FF00', '#800000',
+    '#000080', '#808000', '#800080', '#FF6A00', '#C0C0C0', '#008080', '#FFFF00'];
