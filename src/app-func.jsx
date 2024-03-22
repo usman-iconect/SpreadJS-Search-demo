@@ -255,6 +255,71 @@ export function AppFunc() {
         return hyperLink;
     }
 
+    function HighlightText(searchResults, cellText, row, col, activeSheet, spread) {
+        const highlightCommand = {
+            canUndo: true,
+            execute: function (spread, options, isUndo) {
+                const Commands = GC.Spread.Sheets.Commands;
+                if (isUndo) {
+                    Commands.undoTransaction(spread, options);
+                    return true;
+                } else {
+                    Commands.startTransaction(spread, options);
+                    // activeSheet.getCell(row, col).backColor("green")
+    
+                    //the whole text cell is matched so just highlight that simply
+                    if (searchResults.length === 1 && searchResults[0].text === cellText) {
+                        activeSheet.getCell(row, col).foreColor("#FFDF00")
+                    } else {
+                        const cellContent = { richText: [] };
+                        let lastIndex = 0;
+                        searchResults.forEach((result, index) => {
+    
+                            if (result.index < lastIndex) {
+                                result.index = lastIndex
+                            } else {
+                                //push not highlighted text
+                                cellContent.richText.push({ text: cellText.substring(lastIndex, result.index) });
+                            }
+    
+                            //push highlighted text
+                            lastIndex = result.index + result.text.length;
+                            cellContent.richText.push({ style: { foreColor: "#FFDF00" }, text: cellText.substring(result.index, lastIndex) });
+                        });
+                        if (lastIndex < cellText.length) {
+                            const remainingText = cellText.substring(lastIndex);
+                            cellContent.richText.push({ text: remainingText });
+                        }
+                        activeSheet.setValue(row, col, cellContent);
+                    }
+    
+                    //hover effect
+                    activeSheet.comments.add(row, col, "Person");
+                    const activeComment = activeSheet.comments.get(row, col)
+                    activeComment.width(80)
+                    activeComment.height(35)
+                    activeComment.fontSize('14' + "pt");
+                    activeComment.fontWeight('bold');
+                    activeComment.borderWidth(0);
+                    activeComment.backColor('#FFDF00');
+                    activeComment.zIndex(10000000000000);
+
+
+                    Commands.endTransaction(spread, options);
+                    return true;
+                }
+            }
+        };
+    
+        const commandManager = spread.commandManager();
+        commandManager.register('highlightCommand-' + row + '-' + col, highlightCommand);
+        commandManager.execute({
+            cmd: 'highlightCommand-' + row + '-' + col,
+            sheetName: spread.getActiveSheet().name(),
+            customID: 'highlightCommand-' + row + '-' + col
+        });
+    }
+
     function search() {
         console.log("searching", new Date().toLocaleTimeString())
         // let searchString = ["373087151310005", "778122350629261", "539604577512086", "570410512495429", "880898401883481", "855558342263732", "853530326251646", "823350331938527", "508858507779861", "1936650886647"];
@@ -404,56 +469,7 @@ function findMatches(str, words, matchWholeWord) {
     return matches.length > 0 ? matches.sort((a, b) => a.index - b.index) : matches;
 }
 
-function HighlightText(searchResults, cellText, row, col, activeSheet, spread) {
-    const highlightCommand = {
-        canUndo: true,
-        execute: function (spread, options, isUndo) {
-            const Commands = GC.Spread.Sheets.Commands;
-            if (isUndo) {
-                Commands.undoTransaction(spread, options);
-                return true;
-            } else {
-                Commands.startTransaction(spread, options);
-                //the whole text cell is matched so just highlight that simply
-                if (searchResults.length === 1 && searchResults[0].text === cellText) {
-                    activeSheet.getCell(row, col).foreColor("#FFDF00")
-                } else {
-                    const cellContent = { richText: [] };
-                    let lastIndex = 0;
-                    searchResults.forEach((result, index) => {
 
-                        if (result.index < lastIndex) {
-                            result.index = lastIndex
-                        } else {
-                            //push not highlighted text
-                            cellContent.richText.push({ text: cellText.substring(lastIndex, result.index) });
-                        }
-
-                        //push highlighted text
-                        lastIndex = result.index + result.text.length;
-                        cellContent.richText.push({ style: { foreColor: "#FFDF00" }, text: cellText.substring(result.index, lastIndex) });
-                    });
-                    if (lastIndex < cellText.length) {
-                        const remainingText = cellText.substring(lastIndex);
-                        cellContent.richText.push({ text: remainingText });
-                    }
-                    activeSheet.setValue(row, col, cellContent);
-                }
-
-                Commands.endTransaction(spread, options);
-                return true;
-            }
-        }
-    };
-
-    const commandManager = spread.commandManager();
-    commandManager.register('highlightCommand-' + row + '-' + col, highlightCommand);
-    commandManager.execute({
-        cmd: 'highlightCommand-' + row + '-' + col,
-        sheetName: spread.getActiveSheet().name(),
-        customID: 'highlightCommand-' + row + '-' + col
-    });
-}
 // #808080
 export const WordMarkingTabArray = ['#000000', '#0000FF', '#FF00FF', '#808080', '#008000', '#00FFFF', '#00FF00', '#800000',
     '#000080', '#808000', '#800080', '#FF6A00', '#C0C0C0', '#008080', '#FFFF00'];
