@@ -40,7 +40,12 @@ export function AppFunc() {
                 text: "New Person",
                 name: "newPerson",
                 command: () => {
-                    console.log("new person clicked")
+                    const activeSheet = spread.getActiveSheet()
+                    const row = activeSheet.getActiveRowIndex()
+                    const col = activeSheet.getActiveColumnIndex()
+                    activeSheet.getCell(row, col).foreColor("green")
+                    const activeComment = activeSheet.comments.get(row, col)
+                    activeComment.backColor('green');
                 },
                 workArea: "viewport"
             },
@@ -48,7 +53,12 @@ export function AppFunc() {
                 text: "Current",
                 name: "Current",
                 command: () => {
-                    console.log("Current clicked")
+                    const activeSheet = spread.getActiveSheet()
+                    const row = activeSheet.getActiveRowIndex()
+                    const col = activeSheet.getActiveColumnIndex()
+                    activeSheet.getCell(row, col).foreColor("green")
+                    const activeComment = activeSheet.comments.get(row, col)
+                    activeComment.backColor('green');
                 },
                 workArea: "viewport"
             },
