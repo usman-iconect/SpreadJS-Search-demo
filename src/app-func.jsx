@@ -185,7 +185,7 @@ export function AppFunc() {
         // let searchString = ['misfire', 'legal', 'claim', 'alleged', 'infection', 'design', 'bowel', 'device', 'records', 'erosion', 'patient', 'mesh', 'bard']
         let searchStrings = document.getElementById('search-text').value;
         if (!searchStrings || searchStrings.length === 0) {
-            searchStrings = 'Hall,Smith,Boyd,Trevor,Curtis,Brian,859-86-8326,211-43-1582,713-62-9309';
+            searchStrings = 'Hall,Smith,Boyd,Trevor,Curtis,Brian,jones rachael,859-86-8326,211-43-1582,713-62-9309';
         }
         searchStrings = searchStrings.split(",")
 
@@ -314,6 +314,16 @@ function findMatches(str, words, matchWholeWord) {
 
         while ((match = regex.exec(str)) !== null) {
             matches.push({ text: match[0], index: match.index });
+        }
+    }
+
+    if (!matchWholeWord && matches.length === 0) {
+        for (const word of words) {
+            const splitWord = word.split(' '); // split word into individual words, for names with spaces in different columns
+            if (splitWord.some(wStr => wStr.toLowerCase() === str.toLowerCase())) {
+                matches.push({ text: str, index: 0 });
+                break;
+            }
         }
     }
 
