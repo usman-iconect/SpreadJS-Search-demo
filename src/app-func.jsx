@@ -244,17 +244,6 @@ export function AppFunc() {
         }
     }
 
-    function setCellTypeCallback(hyperLink, data) {
-        // h.text("set sheet tab style");
-        hyperLink.linkToolTip(data.text.includes("@") ? "email" : "Person");
-        hyperLink.activeOnClick(true);
-        hyperLink.linkColor("black");
-        hyperLink.onClickAction(() => {
-            console.log("cell clicked", data);
-        });
-        return hyperLink;
-    }
-
     function HighlightText(searchResults, cellText, row, col, activeSheet, spread) {
         const highlightCommand = {
             canUndo: true,
@@ -266,7 +255,7 @@ export function AppFunc() {
                 } else {
                     Commands.startTransaction(spread, options);
                     // activeSheet.getCell(row, col).backColor("green")
-    
+
                     //the whole text cell is matched so just highlight that simply
                     if (searchResults.length === 1 && searchResults[0].text === cellText) {
                         activeSheet.getCell(row, col).foreColor("#FFDF00")
@@ -274,14 +263,14 @@ export function AppFunc() {
                         const cellContent = { richText: [] };
                         let lastIndex = 0;
                         searchResults.forEach((result, index) => {
-    
+
                             if (result.index < lastIndex) {
                                 result.index = lastIndex
                             } else {
                                 //push not highlighted text
                                 cellContent.richText.push({ text: cellText.substring(lastIndex, result.index) });
                             }
-    
+
                             //push highlighted text
                             lastIndex = result.index + result.text.length;
                             cellContent.richText.push({ style: { foreColor: "#FFDF00" }, text: cellText.substring(result.index, lastIndex) });
@@ -292,9 +281,9 @@ export function AppFunc() {
                         }
                         activeSheet.setValue(row, col, cellContent);
                     }
-    
+
                     //hover effect
-                    activeSheet.comments.add(row, col, "Person");
+                    activeSheet.comments.add(row, col, containsNumber(cellText) ? "SSN" : "Person");
                     const activeComment = activeSheet.comments.get(row, col)
                     activeComment.width(80)
                     activeComment.height(35)
@@ -310,7 +299,7 @@ export function AppFunc() {
                 }
             }
         };
-    
+
         const commandManager = spread.commandManager();
         commandManager.register('highlightCommand-' + row + '-' + col, highlightCommand);
         commandManager.execute({
@@ -326,7 +315,7 @@ export function AppFunc() {
         // let searchString = ['misfire', 'legal', 'claim', 'alleged', 'infection', 'design', 'bowel', 'device', 'records', 'erosion', 'patient', 'mesh', 'bard']
         let searchStrings = document.getElementById('search-text').value;
         if (!searchStrings || searchStrings.length === 0) {
-            searchStrings = 'Hall,Smith,Boyd,Trevor,Curtis,859-86-8326,211-43-1582,Brian,713-62-9309';
+            searchStrings = 'Hall,Smith,Boyd,Trevor,Curtis,Brian,859-86-8326,211-43-1582,713-62-9309';
         }
         searchStrings = searchStrings.split(",")
 
@@ -473,3 +462,8 @@ function findMatches(str, words, matchWholeWord) {
 // #808080
 export const WordMarkingTabArray = ['#000000', '#0000FF', '#FF00FF', '#808080', '#008000', '#00FFFF', '#00FF00', '#800000',
     '#000080', '#808000', '#800080', '#FF6A00', '#C0C0C0', '#008080', '#FFFF00'];
+
+function containsNumber(str) {
+    const numberRegex = /\d/;
+    return numberRegex.test(str);
+}
