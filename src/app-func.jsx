@@ -261,7 +261,7 @@ export function AppFunc() {
         // let searchString = ['misfire', 'legal', 'claim', 'alleged', 'infection', 'design', 'bowel', 'device', 'records', 'erosion', 'patient', 'mesh', 'bard']
         let searchStrings = document.getElementById('search-text').value;
         if (!searchStrings || searchStrings.length === 0) {
-            searchStrings = '31';
+            searchStrings = 'Hall,Smith,Boyd,Trevor,Curtis,859-86-8326,211-43-1582,Brian,713-62-9309';
         }
         searchStrings = searchStrings.split(",")
 
@@ -310,11 +310,12 @@ export function AppFunc() {
 
     React.useEffect(() => {
         if (spread)
-            fetch('issue-highlight.xlsx')
+            fetch('00000029.xlsx')
                 .then(res => res.blob())
                 .then((blob) => {
                     const file = new File([blob], 'excel.xlsx', { type: blob.type });
                     spread.import(file, () => {
+                        search();
                     }, (error) => {
                         console.log('error', error);
                     });
@@ -415,7 +416,7 @@ function HighlightText(searchResults, cellText, row, col, activeSheet, spread) {
                 Commands.startTransaction(spread, options);
                 //the whole text cell is matched so just highlight that simply
                 if (searchResults.length === 1 && searchResults[0].text === cellText) {
-                    activeSheet.getCell(row, col).foreColor("red")
+                    activeSheet.getCell(row, col).foreColor("#FFDF00")
                 } else {
                     const cellContent = { richText: [] };
                     let lastIndex = 0;
@@ -430,7 +431,7 @@ function HighlightText(searchResults, cellText, row, col, activeSheet, spread) {
 
                         //push highlighted text
                         lastIndex = result.index + result.text.length;
-                        cellContent.richText.push({ style: { foreColor: "red" }, text: cellText.substring(result.index, lastIndex) });
+                        cellContent.richText.push({ style: { foreColor: "#FFDF00" }, text: cellText.substring(result.index, lastIndex) });
                     });
                     if (lastIndex < cellText.length) {
                         const remainingText = cellText.substring(lastIndex);
