@@ -31,28 +31,19 @@ export function AppFunc() {
         setSpread(spread);
         spread.contextMenu.menuData = [
             {
-                text: "New Person",
-                name: "newPerson",
+                text: "Extract",
+                name: "highlight",
                 command: () => {
                     const activeSheet = spread.getActiveSheet()
                     const row = activeSheet.getActiveRowIndex()
                     const col = activeSheet.getActiveColumnIndex()
                     activeSheet.getCell(row, col).foreColor("green")
                     const activeComment = activeSheet.comments.get(row, col)
-                    activeComment.backColor('green');
-                },
-                workArea: "viewport"
-            },
-            {
-                text: "Current",
-                name: "Current",
-                command: () => {
-                    const activeSheet = spread.getActiveSheet()
-                    const row = activeSheet.getActiveRowIndex()
-                    const col = activeSheet.getActiveColumnIndex()
-                    activeSheet.getCell(row, col).foreColor("green")
-                    const activeComment = activeSheet.comments.get(row, col)
-                    activeComment.backColor('green');
+                    if (activeComment) {
+                        activeComment.backColor('green');
+                        activeComment.text("Extracted")
+                        activeComment.width(110)
+                    }
                 },
                 workArea: "viewport"
             },
@@ -84,6 +75,7 @@ export function AppFunc() {
         }
 
     }
+
     function open() {
         var file = selectedFile;
         if (!file) {
@@ -118,7 +110,6 @@ export function AppFunc() {
                     return true;
                 } else {
                     Commands.startTransaction(spread, options);
-                    // activeSheet.getCell(row, col).backColor("green")
 
                     //the whole text cell is matched so just highlight that simply
                     if (searchResults.length === 1 && searchResults[0].text === cellText) {
@@ -147,9 +138,9 @@ export function AppFunc() {
                     }
 
                     //hover effect
-                    activeSheet.comments.add(row, col, containsNumber(cellText) ? "SSN" : "Person");
+                    activeSheet.comments.add(row, col, "Search_Result");
                     const activeComment = activeSheet.comments.get(row, col)
-                    activeComment.width(80)
+                    activeComment.width(150)
                     activeComment.height(35)
                     activeComment.fontSize('14' + "pt");
                     activeComment.fontWeight('bold');
@@ -175,8 +166,6 @@ export function AppFunc() {
 
     function search() {
         console.log("searching", new Date().toLocaleTimeString())
-        // let searchString = ["373087151310005", "778122350629261", "539604577512086", "570410512495429", "880898401883481", "855558342263732", "853530326251646", "823350331938527", "508858507779861", "1936650886647"];
-        // let searchString = ['misfire', 'legal', 'claim', 'alleged', 'infection', 'design', 'bowel', 'device', 'records', 'erosion', 'patient', 'mesh', 'bard']
         let searchStrings = document.getElementById('search-text').value;
         if (!searchStrings || searchStrings.length === 0) {
             searchStrings = 'Hall,Smith,Boyd,Trevor,Curtis,Brian,jones rachael,859-86-8326,211-43-1582,713-62-9309';
@@ -207,23 +196,6 @@ export function AppFunc() {
         spread.resumePaint();
         console.log("done", new Date().toLocaleTimeString())
 
-    }
-
-    function openExportTab() {
-        // Open a new tab
-        const exportTab = window.open('/viewer.html', '_blank');
-
-        // Listen for messages from the export tab
-        window.addEventListener('message', (event) => {
-            console.log("ecent coming", event)
-            if (event.origin !== window.location.origin) return;
-
-            // Handle messages from the export tab
-            if (event.data === 'exportCompleted') {
-                // Do something when export is completed, e.g., close the export tab
-                exportTab.close();
-            }
-        });
     }
 
     React.useEffect(() => {
@@ -265,33 +237,6 @@ export function AppFunc() {
                     <button class="settingButton" id="serach" onClick={search}>Search</button>
 
                 </div>
-                <button class="settingButton" id="serach" onClick={() => {
-                    spread.savePDF(function (blob) {
-
-                        console.log(blob)
-
-                    }, function ({ errorMessage }) {
-                        console.log(errorMessage);
-                    }, {
-                        title: 'Test Title',
-                        author: 'Test Author',
-                        subject: 'Test Subject',
-                        keywords: 'Test Keywords',
-                        creator: 'test Creator'
-                    });
-                }}>Export PDF</button>
-                <button style={{ marginLeft: 10 }} class="settingButton" id="serach" onClick={() => {
-                    spread.suspendPaint();
-                    const sheet = spread.sheets[1];
-                    const printInfo = sheet.printInfo();
-                    printInfo.showBorder(false);
-                    printInfo.showGridLine(true);
-                    spread.resumePaint();
-                    setTimeout(() => {
-                        spread.print()
-                    }, 0)
-                }}>Print</button>
-                <button style={{ marginLeft: 10 }} class="settingButton" onClick={openExportTab}>New Tab Print</button>
             </div>
         </div>
     </div>;
