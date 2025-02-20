@@ -139,6 +139,7 @@ export function AppFunc() {
 
     function search() {
         console.log("searching", new Date().toLocaleTimeString())
+        setCurrentHitIndex(0)
         let navigableHits = [];
         let searchStrings = document.getElementById('search-text').value;
         if (!searchStrings || searchStrings.length === 0) {
@@ -381,8 +382,8 @@ export function AppFunc() {
             if (hit) {
                 spread.setActiveSheetIndex(hit.sheetIndex);
                 spread.getActiveSheet().setActiveCell(hit.row, hit.col);
-                spread.getActiveSheet().showColumn(hit.col, GC.Spread.Sheets.HorizontalPosition.left);
-                spread.getActiveSheet().showRow(hit.row, GC.Spread.Sheets.VerticalPosition.top);
+                spread.getActiveSheet().showColumn(hit.col, GC.Spread.Sheets.HorizontalPosition.center);
+                spread.getActiveSheet().showRow(hit.row, GC.Spread.Sheets.VerticalPosition.center);
             }
         }
     }, [navigableHits, currentHitIndex])
