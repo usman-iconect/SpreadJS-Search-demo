@@ -196,7 +196,7 @@ export function AppFunc() {
                     text = activeSheet.getText(i, j);
                 const searchResults = findMatches(text, searchStrings, false);
                 if (searchResults.length > 0) {
-                    navigableHits.push({ row: i, col: j });
+                    navigableHits.push({ row: i, col: j, sheetIndex: spread.getActiveSheetIndex() });
                     HighlightText(searchResults, text, i, j, activeSheet, spread);
                 }
             }
@@ -323,8 +323,10 @@ export function AppFunc() {
         if (navigableHits.length > 0) {
             const hit = navigableHits[currentHitIndex];
             if (hit) {
+                spread.setActiveSheetIndex(hit.sheetIndex);
                 spread.getActiveSheet().setActiveCell(hit.row, hit.col);
-                spread.getActiveSheet().showCell(hit.row, hit.col, GC.Spread.Sheets.VerticalPosition.center, GC.Spread.Sheets.HorizontalPosition.center);
+                spread.getActiveSheet().showColumn(hit.col, GC.Spread.Sheets.HorizontalPosition.left );
+                spread.getActiveSheet().showRow(scrollPositions.current.top, GC.Spread.Sheets.VerticalPosition.top);
             }
         }
     }, [navigableHits, currentHitIndex])
