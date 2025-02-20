@@ -19,19 +19,13 @@ window.GC = GC;
 export function AppFunc() {
     const [spread, setSpread] = React.useState(null);
     const [selectedFile, setSelectedFile] = React.useState(null);
-    const [openOptions, setOpenOptions] = React.useState({
+    const openOptions= {
         sjs: {},
         ssjson: {},
         xlsx: {},
         csv: {},
-    });
-    const [saveOptions, setSaveOptions] = React.useState({
-        sjs: {},
-        ssjson: {},
-        xlsx: {},
-        csv: {},
-    });
-
+    }
+   
     function initSpread(spread) {
 
         setSpread(spread);
