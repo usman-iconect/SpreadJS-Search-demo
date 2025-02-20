@@ -510,11 +510,11 @@ export function AppFunc() {
         </div>
         <div className="options-container">
             <div className="option-row">
-                <div class="inputContainer">
+                {/* <div class="inputContainer">
                     <input id="selectedFile" type="file" accept=".sjs, .xlsx, .xlsm, .ssjson, .json, .csv" onChange={onSelectedFileChange} />
                     <button class="settingButton" id="open" onClick={open}>Open</button>
 
-                </div>
+                </div> */}
                 <div class="inputContainer">
                     <input type='text' id='search-text' style={{
                         border: '1px solid black',
