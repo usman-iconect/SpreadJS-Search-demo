@@ -35,42 +35,6 @@ export function AppFunc() {
     function initSpread(spread) {
 
         setSpread(spread);
-        spread.contextMenu.menuData = [
-            {
-                text: "Extract",
-                name: "highlight",
-                command: () => {
-                    const activeSheet = spread.getActiveSheet()
-                    const row = activeSheet.getActiveRowIndex()
-                    const col = activeSheet.getActiveColumnIndex()
-                    activeSheet.getCell(row, col).foreColor("green")
-                    const activeComment = activeSheet.comments.get(row, col)
-                    if (activeComment) {
-                        activeComment.backColor('green');
-                        activeComment.text("Extracted")
-                        activeComment.width(110)
-                    }
-                },
-                workArea: "viewport"
-            },
-            {
-                text: "Copy",
-                name: "Copy",
-                command: () => {
-                    console.log("Copy clicked")
-                },
-                workArea: "viewport"
-            },
-            {
-                text: "Close",
-                name: "Close",
-                command: () => {
-                    console.log("close clicked")
-                },
-                workArea: "viewport"
-            },
-        ]
-
         //init Status Bar
         var statusBar = new GC.Spread.Sheets.StatusBar.StatusBar(document.getElementById('statusBar'));
         statusBar.bind(spread);
@@ -207,7 +171,6 @@ export function AppFunc() {
 
     }
 
-
     function getTextForSelectedCells() {
         const activeSheet = spread.getActiveSheet();
         const selections = activeSheet.getSelections();
@@ -303,6 +266,9 @@ export function AppFunc() {
         return container;
     }
 
+    function extractData() {
+
+    }
 
     React.useEffect(() => {
         if (spread)
@@ -326,7 +292,7 @@ export function AppFunc() {
                 spread.setActiveSheetIndex(hit.sheetIndex);
                 spread.getActiveSheet().setActiveCell(hit.row, hit.col);
                 spread.getActiveSheet().showColumn(hit.col, GC.Spread.Sheets.HorizontalPosition.left );
-                spread.getActiveSheet().showRow(scrollPositions.current.top, GC.Spread.Sheets.VerticalPosition.top);
+                spread.getActiveSheet().showRow(hit.row, GC.Spread.Sheets.VerticalPosition.top);
             }
         }
     }, [navigableHits, currentHitIndex])
@@ -464,9 +430,10 @@ export function AppFunc() {
                         border: '1px solid black',
                         marginRight: '10px'
                     }} />
-                    <button class="settingButton" id="serach" onClick={search}>Search</button>
-                    <button class="settingButton" id="serach" style={{ marginRight: '8px' }} onClick={() => setCurrentHitIndex(currentHitIndex - 1)}>Previous Hit</button>
-                    <button class="settingButton" id="serach" onClick={() => setCurrentHitIndex(currentHitIndex + 1)}>Next Hit</button>
+                    <button class="settingButton" id="search" onClick={search}>Search</button>
+                    <button class="settingButton" id="prev" style={{ marginRight: '8px' }} onClick={() => setCurrentHitIndex(currentHitIndex - 1)}>Previous Hit</button>
+                    <button class="settingButton" id="next" onClick={() => setCurrentHitIndex(currentHitIndex + 1)}>Next Hit</button>
+                    <button class="settingButton" id="extract" onClick={extractData}>Extract Data</button>
                 </div>
             </div>
         </div>
