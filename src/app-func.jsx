@@ -19,13 +19,15 @@ window.GC = GC;
 export function AppFunc() {
     const [spread, setSpread] = React.useState(null);
     const [selectedFile, setSelectedFile] = React.useState(null);
-    const openOptions= {
+    const [navigableHits, setNavigableHits] = React.useState([]);
+    const [currentHitIndex, setCurrentHitIndex] = React.useState(0);
+    const openOptions = {
         sjs: {},
         ssjson: {},
         xlsx: {},
         csv: {},
     }
-   
+
     function initSpread(spread) {
 
         setSpread(spread);
@@ -166,6 +168,7 @@ export function AppFunc() {
 
     function search() {
         console.log("searching", new Date().toLocaleTimeString())
+        let navigableHits = [];
         let searchStrings = document.getElementById('search-text').value;
         if (!searchStrings || searchStrings.length === 0) {
             searchStrings = 'Hall,Smith,Boyd,Trevor,Curtis,Brian,jones rachael,859-86-8326,211-43-1582,713-62-9309';
@@ -189,10 +192,12 @@ export function AppFunc() {
                     text = activeSheet.getText(i, j);
                 const searchResults = findMatches(text, searchStrings, false);
                 if (searchResults.length > 0) {
+                    navigableHits.push({ row: i, col: j });
                     HighlightText(searchResults, text, i, j, activeSheet, spread);
                 }
             }
         }
+        setNavigableHits(navigableHits)
         spread.resumePaint();
         console.log("done", new Date().toLocaleTimeString())
 
@@ -211,6 +216,16 @@ export function AppFunc() {
                     });
                 });
     }, [spread]);
+
+    React.useEffect(() => {
+        if (navigableHits.length > 0) {
+            const hit = navigableHits[currentHitIndex];
+            if (hit) {
+                spread.getActiveSheet().setActiveCell(hit.row, hit.col);
+                spread.getActiveSheet().showCell(hit.row, hit.col, GC.Spread.Sheets.VerticalPosition.center, GC.Spread.Sheets.HorizontalPosition.center);
+            }
+        }
+    }, [navigableHits, currentHitIndex])
 
     return <div class="sample-tutorial">
         <div class="sample-container">
@@ -235,7 +250,8 @@ export function AppFunc() {
                         marginRight: '10px'
                     }} />
                     <button class="settingButton" id="serach" onClick={search}>Search</button>
-
+                    <button class="settingButton" id="serach" style={{ marginRight: '8px' }} onClick={() => setCurrentHitIndex(currentHitIndex - 1)}>Previous Hit</button>
+                    <button class="settingButton"id="serach" onClick={() => setCurrentHitIndex(currentHitIndex + 1)}>Next Hit</button>
                 </div>
             </div>
         </div>
@@ -273,8 +289,3 @@ function findMatches(str, words, matchWholeWord) {
 // #808080
 export const WordMarkingTabArray = ['#000000', '#0000FF', '#FF00FF', '#808080', '#008000', '#00FFFF', '#00FF00', '#800000',
     '#000080', '#808000', '#800080', '#FF6A00', '#C0C0C0', '#008080', '#FFFF00'];
-
-function containsNumber(str) {
-    const numberRegex = /\d/;
-    return numberRegex.test(str);
-}
