@@ -275,8 +275,24 @@ export function AppFunc() {
             const range = sheet.getUsedRange(GC.Spread.Sheets.UsedRangeType.data);
             const nonEmptyColumns = getNonEmptyCols(sheet);
             const groupedColumns = groupConsecutiveColumns(nonEmptyColumns)
-            console.log(`Sheet-${sheetIndex} Data` , groupedColumns.map(group => sheet.getArray(0, group[0], range.row + range.rowCount, group[1])))
+            console.log(`Sheet-${sheetIndex} Data`, groupedColumns.map(group => sheet.getArray(0, group[0], range.row + range.rowCount, group[1])))
         }
+    }
+
+    function fitRowsToPageHeight() {
+        const changeAmount = 0.1;
+        const activeSheet = spread.getActiveSheet();
+        const rowCount = activeSheet.getRowCount(GC.Spread.Sheets.SheetArea.rowHeader);
+        let lastVisibleRowOnScreen = activeSheet.getViewportBottomRow(1) + 1;
+        let newZoom = 1;
+        while (newZoom > 0.25) {
+            if (rowCount <= lastVisibleRowOnScreen)
+                break;
+            newZoom -= changeAmount;
+            activeSheet.zoom(newZoom);
+            lastVisibleRowOnScreen = activeSheet.getViewportBottomRow(1) + 1;
+        }
+        activeSheet.zoom(newZoom);
     }
 
     React.useEffect(() => {
@@ -441,7 +457,8 @@ export function AppFunc() {
                     <button class="settingButton" id="search" onClick={search}>Search</button>
                     <button class="settingButton" id="prev" style={{ marginRight: '8px' }} onClick={() => setCurrentHitIndex(currentHitIndex - 1)}>Previous Hit</button>
                     <button class="settingButton" id="next" onClick={() => setCurrentHitIndex(currentHitIndex + 1)}>Next Hit</button>
-                    <button class="settingButton" id="extract" onClick={extractData}>Extract Data</button>
+                    <button class="settingButton" id="extract" style={{ marginRight: '8px' }} onClick={extractData}>Extract Data</button>
+                    <button class="settingButton" id="fitRowsToPageHeight" onClick={fitRowsToPageHeight}>Fit to Height</button>
                 </div>
             </div>
         </div>
