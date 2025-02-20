@@ -267,7 +267,16 @@ export function AppFunc() {
     }
 
     function extractData() {
-
+        const activeSheetIndex = spread.getActiveSheetIndex();
+        const sheetIndexList = [activeSheetIndex, ...spread.sheets.map((_, index) => index).filter(index => index !== activeSheetIndex)];
+        for (let index = 0; index < sheetIndexList.length; index++) {
+            const sheetIndex = sheetIndexList[index];
+            const sheet = spread.sheets[sheetIndex];
+            const range = sheet.getUsedRange(GC.Spread.Sheets.UsedRangeType.data);
+            const nonEmptyColumns = getNonEmptyCols(sheet);
+            const groupedColumns = groupConsecutiveColumns(nonEmptyColumns)
+            console.log(`Sheet-${sheetIndex} Data` , groupedColumns.map(group => sheet.getArray(0, group[0], range.row + range.rowCount, group[1])))
+        }
     }
 
     React.useEffect(() => {
@@ -291,7 +300,7 @@ export function AppFunc() {
             if (hit) {
                 spread.setActiveSheetIndex(hit.sheetIndex);
                 spread.getActiveSheet().setActiveCell(hit.row, hit.col);
-                spread.getActiveSheet().showColumn(hit.col, GC.Spread.Sheets.HorizontalPosition.left );
+                spread.getActiveSheet().showColumn(hit.col, GC.Spread.Sheets.HorizontalPosition.left);
                 spread.getActiveSheet().showRow(hit.row, GC.Spread.Sheets.VerticalPosition.top);
             }
         }
@@ -304,7 +313,6 @@ export function AppFunc() {
         }
         let isSelectingText = false;
         const spreadHost = document.querySelector('.sample-spreadsheets');
-        console.log(spreadHost)
 
         function onSpreadHostMouseDown(e) {
             const editingElement = document.querySelector('[gcuielement="gcEditingInput"]')
@@ -471,3 +479,37 @@ function findMatches(str, words, matchWholeWord) {
 // #808080
 export const WordMarkingTabArray = ['#000000', '#0000FF', '#FF00FF', '#808080', '#008000', '#00FFFF', '#00FF00', '#800000',
     '#000080', '#808000', '#800080', '#FF6A00', '#C0C0C0', '#008080', '#FFFF00'];
+
+
+export function getNonEmptyCols(sheet) {
+    let json = sheet.toJSON()
+    let dataTable = json.data.dataTable && Object.keys(json.data.dataTable);
+    let nonEmptyColumns = [];
+    dataTable && dataTable.forEach((row) => {
+        let rowArray = Object.keys(json.data.dataTable[row]);
+        rowArray.forEach((col) => {
+            if (!nonEmptyColumns.includes(Number(col))) {
+                nonEmptyColumns.push(Number(col));
+            }
+        });
+    });
+    return nonEmptyColumns.sort((a, b) => Number(a) - Number(b));
+}
+
+export function groupConsecutiveColumns(arr) {
+    if (!arr.length) return [];
+
+    arr.sort((a, b) => a - b); // Ensure the array is sorted
+    const result = [];
+    let start = arr[0];
+
+    for (let i = 1; i < arr.length; i++) {
+        if (arr[i] !== arr[i - 1] + 1) {
+            result.push([start, arr[i - 1]]);
+            start = arr[i];
+        }
+    }
+    result.push([start, arr[arr.length - 1]]); // Push the last range
+
+    return result;
+}
