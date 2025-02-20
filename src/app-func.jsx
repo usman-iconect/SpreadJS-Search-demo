@@ -31,6 +31,9 @@ export function AppFunc() {
     const selectedTextRef = React.useRef(null);
     const isPartialCellSelectionRef = React.useRef(false);
     const selectedCellPosition = React.useRef({ left: 0, top: 0 });
+    const HiddenRowColumnMap = React.useRef({});
+    const wasSheetHidden = React.useRef({});
+    const showHiddenDataRef = React.useRef(false);
 
     function initSpread(spread) {
 
@@ -295,6 +298,67 @@ export function AppFunc() {
         activeSheet.zoom(newZoom);
     }
 
+    function toggleShowHiddenData(showHiddenData) {
+        function showHiddenRowsAndColumn(visible) {
+            spread.sheets.forEach((sheet, sheetIndex) => {
+                if (wasSheetHidden.current[sheetIndex]) {
+                    sheet.visible(visible)
+                }
+                if (HiddenRowColumnMap.current[Number(sheetIndex)]) {
+                    const { hiddenColumns, hiddenRows } = HiddenRowColumnMap.current[Number(sheetIndex)];
+                    hiddenColumns.forEach(columnIndex => {
+                        sheet.setColumnVisible(columnIndex, visible, GC.Spread.Sheets.SheetArea.colHeader);
+                    })
+                    hiddenRows.forEach(rowIndex => {
+                        sheet.setRowVisible(rowIndex, visible, GC.Spread.Sheets.SheetArea.rowHeader);
+                    })
+                }
+            });
+        }
+
+        const hasProcessedHiddenData = Object.keys(HiddenRowColumnMap.current).length > 0;
+        setTimeout(() => {
+            spread.suspendPaint();
+            spread.suspendEvent();
+            //if we already have hidden rows and column information, just use that.
+            if (hasProcessedHiddenData)
+                showHiddenRowsAndColumn(showHiddenData)
+            else if (showHiddenData)
+                //go through the sheets and unhide hidden rows and columns and also generate the hidden rows and column map.
+                spread.sheets.forEach((sheet, sheetIndex) => {
+                    if (!sheet.visible()) {
+                        wasSheetHidden.current[sheetIndex] = true;
+                        sheet.visible(true)
+                    }
+                    //unhide all columns
+                    const columnCount = sheet.getColumnCount(GC.Spread.Sheets.SheetArea.colHeader);
+                    for (let i = 0; i < columnCount; i++) {
+                        if (!sheet.getColumnVisible(i, GC.Spread.Sheets.SheetArea.colHeader)) {
+                            if (!HiddenRowColumnMap.current[sheetIndex])
+                                HiddenRowColumnMap.current[sheetIndex] = { hiddenColumns: [i], hiddenRows: [] };
+                            else
+                                HiddenRowColumnMap.current[sheetIndex].hiddenColumns.push(i);
+                            sheet.setColumnVisible(i, true, GC.Spread.Sheets.SheetArea.colHeader)
+                        }
+                    }
+                    //unhide all rows
+                    const rowCount = sheet.getRowCount(GC.Spread.Sheets.SheetArea.rowHeader);
+                    for (let i = 0; i < rowCount; i++) {
+                        if (!sheet.getRowVisible(i, GC.Spread.Sheets.SheetArea.rowHeader)) {
+                            if (!HiddenRowColumnMap.current[sheetIndex])
+                                HiddenRowColumnMap.current[sheetIndex] = { hiddenColumns: [], hiddenRows: [i] };
+                            else
+                                HiddenRowColumnMap.current[sheetIndex].hiddenRows.push(i);
+                            sheet.setRowVisible(i, true, GC.Spread.Sheets.SheetArea.rowHeader)
+                        }
+                    }
+                });
+            spread.resumePaint();
+            spread.resumeEvent();
+        }, 100)
+    }
+
+    //file opening
     React.useEffect(() => {
         if (spread)
             fetch('00000029.xlsx')
@@ -310,6 +374,7 @@ export function AppFunc() {
                 });
     }, [spread]);
 
+    //hit navigation
     React.useEffect(() => {
         if (navigableHits.length > 0) {
             const hit = navigableHits[currentHitIndex];
@@ -322,6 +387,7 @@ export function AppFunc() {
         }
     }, [navigableHits, currentHitIndex])
 
+    //custom context menu
     React.useEffect(() => {
 
         if (!spread || !isWorkbookReadyToUse) {
@@ -459,6 +525,10 @@ export function AppFunc() {
                     <button class="settingButton" id="next" onClick={() => setCurrentHitIndex(currentHitIndex + 1)}>Next Hit</button>
                     <button class="settingButton" id="extract" style={{ marginRight: '8px' }} onClick={extractData}>Extract Data</button>
                     <button class="settingButton" id="fitRowsToPageHeight" onClick={fitRowsToPageHeight}>Fit to Height</button>
+                    <button class="settingButton" id="toggleShowHiddenData" onClick={() => {
+                        showHiddenDataRef.current = !showHiddenDataRef.current;
+                        toggleShowHiddenData(showHiddenDataRef.current)
+                    }}>Show/Hide Data</button>
                 </div>
             </div>
         </div>
