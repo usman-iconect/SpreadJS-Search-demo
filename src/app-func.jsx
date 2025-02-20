@@ -21,12 +21,16 @@ export function AppFunc() {
     const [selectedFile, setSelectedFile] = React.useState(null);
     const [navigableHits, setNavigableHits] = React.useState([]);
     const [currentHitIndex, setCurrentHitIndex] = React.useState(0);
+    const [isWorkbookReadyToUse, setWorkbookReady] = React.useState(false);
     const openOptions = {
         sjs: {},
         ssjson: {},
         xlsx: {},
         csv: {},
     }
+    const selectedTextRef = React.useRef(null);
+    const isPartialCellSelectionRef = React.useRef(false);
+    const selectedCellPosition = React.useRef({ left: 0, top: 0 });
 
     function initSpread(spread) {
 
@@ -102,7 +106,7 @@ export function AppFunc() {
         setSelectedFile(selectedFile);
     }
 
-    function HighlightText(searchResults, cellText, row, col, activeSheet, spread) {
+    function HighlightText(searchResults, cellText, row, col, activeSheet, spread, isExtracted) {
         const highlightCommand = {
             canUndo: true,
             execute: function (spread, options, isUndo) {
@@ -130,7 +134,7 @@ export function AppFunc() {
 
                             //push highlighted text
                             lastIndex = result.index + result.text.length;
-                            cellContent.richText.push({ style: { foreColor: "#FFDF00" }, text: cellText.substring(result.index, lastIndex) });
+                            cellContent.richText.push({ style: { foreColor: isExtracted ? "green" : "#FFDF00" }, text: cellText.substring(result.index, lastIndex) });
                         });
                         if (lastIndex < cellText.length) {
                             const remainingText = cellText.substring(lastIndex);
@@ -140,14 +144,14 @@ export function AppFunc() {
                     }
 
                     //hover effect
-                    activeSheet.comments.add(row, col, "Search_Result");
+                    activeSheet.comments.add(row, col, isExtracted ? "Extracted" : "Search_Result");
                     const activeComment = activeSheet.comments.get(row, col)
-                    activeComment.width(150)
+                    activeComment.width(isExtracted ? 110 : 150)
                     activeComment.height(35)
                     activeComment.fontSize('14' + "pt");
                     activeComment.fontWeight('bold');
                     activeComment.borderWidth(0);
-                    activeComment.backColor('#FFDF00');
+                    activeComment.backColor(isExtracted ? "green" : '#FFDF00');
                     activeComment.zIndex(10000000000000);
 
 
@@ -203,6 +207,103 @@ export function AppFunc() {
 
     }
 
+
+    function getTextForSelectedCells() {
+        const activeSheet = spread.getActiveSheet();
+        const selections = activeSheet.getSelections();
+        const textList = [];
+        selections.forEach(s => {
+            for (let r = s.row; r <= s.row + s.rowCount - 1; r++) {
+                for (let c = s.col; c <= s.col + s.colCount - 1; c++) {
+                    textList.push(activeSheet.getText(r, c));
+                }
+            }
+        })
+        return textList
+    }
+
+    function getContextMenu(selectedText) {
+        //selected Text is only passed down to this function if its a partial cell text selection
+        isPartialCellSelectionRef.current = selectedText && selectedText.length > 0;
+        selectedTextRef.current = selectedText
+        return [
+            {
+                text: "Extract",
+                name: "extract",
+                command: () => {
+                    const activeSheet = spread.getActiveSheet()
+                    const row = activeSheet.getActiveRowIndex()
+                    const col = activeSheet.getActiveColumnIndex()
+                    if (selectedText) {
+                        HighlightText([{ text: selectedText, index: activeSheet.getText(row, col).indexOf(selectedText) }], activeSheet.getText(row, col), row, col, activeSheet, spread, true);
+                        hideCustomContextMenu()
+                    }
+                    else {
+                        activeSheet.getCell(row, col).foreColor("green")
+                        const activeComment = activeSheet.comments.get(row, col)
+                        if (activeComment) {
+                            activeComment.backColor('green');
+                            activeComment.text("Extracted")
+                            activeComment.width(110)
+                        }
+                    }
+                },
+                workArea: "viewport"
+            },
+            {
+                text: "Copy",
+                name: 'copy',
+                command: () => {
+                    //simply copy the selected text if user is manually highlighting some text.
+                    if (selectedText)
+                        navigator.clipboard.writeText(selectedText)
+                    else {
+                        const textToCopyList = getTextForSelectedCells();
+                        navigator.clipboard.writeText(textToCopyList.join(", "));
+                    }
+                    hideCustomContextMenu()
+                },
+                workArea: "viewport"
+            }
+        ]
+    }
+
+
+    function showCustomContextMenu(options, x, y) {
+        // closes previous opened context menu
+        hideCustomContextMenu();
+        const contextMenuHost = createContextMenu(options, x, y);
+        const hostElement = document.querySelector('[gcuielement="gcLayerContainer"]');
+        hostElement.appendChild(contextMenuHost);
+    }
+
+    // hides custom context menu
+    function hideCustomContextMenu() {
+        const element = document.querySelector('.custom-context-menu-container');
+        if (element)
+            element.remove();
+    }
+
+    function createContextMenu(options, x, y) {
+        const container = document.createElement("div");
+        container.style.position = "absolute";
+        container.style.zIndex = '2100';
+        container.style.left = `${x}px`;
+        container.style.top = `${y}px`;
+        container.classList.add('custom-context-menu-container');
+
+        options.forEach((option) => {
+            const optionDiv = document.createElement('div');
+            optionDiv.classList.add('custom-context-menu-item');
+            option.disable && optionDiv.classList.add('disabled');
+            optionDiv.textContent = option.text;
+            optionDiv.onclick = !option.disable && option.command;
+            container.appendChild(optionDiv);
+        });
+        return container;
+    }
+
+
     React.useEffect(() => {
         if (spread)
             fetch('00000029.xlsx')
@@ -210,6 +311,7 @@ export function AppFunc() {
                 .then((blob) => {
                     const file = new File([blob], 'excel.xlsx', { type: blob.type });
                     spread.import(file, () => {
+                        setWorkbookReady(true)
                         search();
                     }, (error) => {
                         console.log('error', error);
@@ -226,6 +328,117 @@ export function AppFunc() {
             }
         }
     }, [navigableHits, currentHitIndex])
+
+    React.useEffect(() => {
+
+        if (!spread || !isWorkbookReadyToUse) {
+            return;
+        }
+        let isSelectingText = false;
+        const spreadHost = document.querySelector('.sample-spreadsheets');
+        console.log(spreadHost)
+
+        function onSpreadHostMouseDown(e) {
+            const editingElement = document.querySelector('[gcuielement="gcEditingInput"]')
+            const sheet = spread.getActiveSheet();
+            if (editingElement && sheet.isEditing() && (editingElement === e.target || editingElement.contains(e.target))) {
+                isSelectingText = true;
+            }
+        }
+
+        function onSpreadHostMouseUp() {
+            const editingElement = document.querySelector('[gcuielement="gcEditingInput"]')
+            const sheet = spread.getActiveSheet();
+            if (sheet.isEditing() && editingElement && isSelectingText) {
+                const selection = window.getSelection();
+                const selectedText = selection.toString();
+
+                if (selectedText !== '') {
+                    //generates a new custom menu that will show up after user is done selecting some text.
+                    let customMenuX, customMenuY;
+                    try {
+                        const range = selection.getRangeAt(0);
+                        const clientRects = range.getClientRects();
+                        const lastHighLightRect = clientRects[clientRects.length - 1];
+
+                        const spreadJSEl = document.querySelector(".viewer_document");
+                        const spreadJSElClientRect = spreadJSEl.getBoundingClientRect();
+                        customMenuX = (lastHighLightRect.x - spreadJSElClientRect.x); // Add offset to avoid blocking highlight text
+                        customMenuY = (lastHighLightRect.y - spreadJSElClientRect.y) + 20;
+                    } catch (error) {
+                        const cellRect = sheet.getCellRect(sheet.getActiveRowIndex(), sheet.getActiveColumnIndex(), 1, 1);
+                        customMenuX = cellRect.x;
+                        customMenuY = cellRect.y + cellRect.height;
+                    }
+
+                    showCustomContextMenu(
+                        getContextMenu(selectedText),
+                        customMenuX,
+                        customMenuY
+                    );
+                }
+                isSelectingText = false;
+            }
+        }
+
+        function onMouseDown(event) {
+            const target = event.target;
+            const contextMenuContainer = document.querySelector('.custom-context-menu-container');
+            if (target !== contextMenuContainer && contextMenuContainer && !contextMenuContainer.contains(target)) {
+                hideCustomContextMenu();
+            }
+        }
+
+        function onMouseUp(e) {
+            selectedCellPosition.current = {
+                left: e.x,
+                top: e.y
+            }
+        }
+
+        //setting the context menu that opens on right click
+        const newContextMenu = getContextMenu();
+        const wrapper = document.querySelector < HTMLDivElement > ('#gc-dialog1 > div > div:nth-child(1)');
+        if (wrapper && spread.contextMenu.menuData.length && spread.contextMenu.menuData[0].disable == true && newContextMenu[0].disable == false) {
+
+            const newElements = spread.contextMenu.menuView.createMenuItemElement(newContextMenu[0])
+            const element = newElements[0];
+
+            element.onclick = function () {
+                typeof spread.contextMenu.menuData[0].command == 'function' ? spread.contextMenu.menuData[0].command() : () => { };
+
+                //remove dialog
+                document.querySelector('#gc-dialog1').remove();
+                document.querySelector('.gc-overlay-gc-dialog1').remove();
+            };
+            //
+            wrapper.onmouseenter = () => {
+                wrapper.classList.remove('gc-ui-contextmenu-disable-hover');
+                wrapper.classList.add('gc-ui-contextmenu-hover');
+                wrapper.classList.add('ui-state-hover');
+            }
+
+            wrapper.firstChild.remove();
+            wrapper.appendChild(element);
+        }
+        spread.contextMenu.menuData = newContextMenu;
+        //setting the context menu that opens on text selection
+        spreadHost.addEventListener('mousedown', onSpreadHostMouseDown);
+        spreadHost.addEventListener('mouseup', onSpreadHostMouseUp);
+
+        document.addEventListener('mousedown', onMouseDown, true);
+        document.addEventListener('mouseup', onMouseUp)
+
+        return () => {
+            if (isWorkbookReadyToUse) {
+                spreadHost.removeEventListener('mousedown', onSpreadHostMouseDown);
+                spreadHost.removeEventListener('mouseup', onSpreadHostMouseUp);
+                document.removeEventListener('mousedown', onMouseDown, true);
+                document.removeEventListener('mouseup', onMouseUp)
+            }
+        }
+
+    }, [spread, isWorkbookReadyToUse]);
 
     return <div class="sample-tutorial">
         <div class="sample-container">
@@ -251,7 +464,7 @@ export function AppFunc() {
                     }} />
                     <button class="settingButton" id="serach" onClick={search}>Search</button>
                     <button class="settingButton" id="serach" style={{ marginRight: '8px' }} onClick={() => setCurrentHitIndex(currentHitIndex - 1)}>Previous Hit</button>
-                    <button class="settingButton"id="serach" onClick={() => setCurrentHitIndex(currentHitIndex + 1)}>Next Hit</button>
+                    <button class="settingButton" id="serach" onClick={() => setCurrentHitIndex(currentHitIndex + 1)}>Next Hit</button>
                 </div>
             </div>
         </div>
